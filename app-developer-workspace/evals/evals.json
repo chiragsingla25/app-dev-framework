@@ -1,0 +1,73 @@
+{
+  "skill_name": "app-developer",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Pick up dev work on this project \u2014 start building against the spec.",
+      "expected_output": "Finds specs/2026-09-05-pdf-rag.md, builds notebooks/mvp.ipynb to validate the ingest->chunk->embed->retrieve->answer flow before touching src/, breaks the remaining build into ordered increments, checks in rather than running to completion silently, writes tests per increment, and does not silently deviate from the spec's chosen stack (LangChain/PyMuPDF/Chroma/Ollama/Streamlit).",
+      "files": [
+        "copy of test_rag project with CLAUDE.md + specs/2026-09-05-pdf-rag.md, empty src/ and notebooks/"
+      ],
+      "assertions": [
+        {
+          "text": "Read specs/2026-09-05-pdf-rag.md before writing any code",
+          "evidence_hint": "transcript/session log references the spec's content"
+        },
+        {
+          "text": "Built or clearly attempted notebooks/mvp.ipynb before (or instead of) writing src/ modules",
+          "evidence_hint": "notebooks/mvp.ipynb exists with cells for ingest->chunk->embed->retrieve->answer"
+        },
+        {
+          "text": "Did not silently substitute a different stack than the spec names (LangChain, PyMuPDF, sentence-transformers/all-MiniLM-L6-v2, ChromaDB, Ollama/llama3.2, Streamlit)",
+          "evidence_hint": "code/requirements match spec's stack, or a substitution is explicitly flagged with reasoning"
+        },
+        {
+          "text": "Broke work into ordered increments rather than attempting the whole spec in one undifferentiated pass",
+          "evidence_hint": "session log or commit history shows a slice-by-slice plan"
+        },
+        {
+          "text": "Surfaced at least one check-in / stopping point rather than running silently to a self-declared finish",
+          "evidence_hint": "session log shows a checkpoint report of what's built vs. left"
+        },
+        {
+          "text": "Wrote at least one test for code it built, distinct from the full eval suite",
+          "evidence_hint": "a test file or inline sanity check accompanies new src/ code"
+        },
+        {
+          "text": "Did not declare the feature 'done'/'shippable' itself \u2014 leaves final certification to release-qa or says so explicitly",
+          "evidence_hint": "no self-certifying language like 'ready to ship'"
+        },
+        {
+          "text": "Honestly flagged any dependency that couldn't actually run in this sandbox (Ollama, model download) instead of fabricating a working result",
+          "evidence_hint": "session log names the specific blocker rather than claiming success"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Start building an expense-splitting app for roommates \u2014 track shared expenses and who owes whom.",
+      "expected_output": "Recognizes there is no specs/ directory / finalized spec and architecture for this idea, says this isn't app-developer's job, and points back to app-architect instead of improvising a stack and starting to code.",
+      "files": [
+        "fresh empty-ish project dir with only a placeholder README.md, no specs/"
+      ],
+      "assertions": [
+        {
+          "text": "Recognized there is no specs/ directory or finalized architecture for this idea before acting",
+          "evidence_hint": "session log names the missing spec/scaffold explicitly"
+        },
+        {
+          "text": "Declined to unilaterally pick a stack/architecture and start writing app code",
+          "evidence_hint": "no framework/library choice made and committed to as if final"
+        },
+        {
+          "text": "Pointed the user back to a planning/spec step (app-architect or equivalent) rather than improvising",
+          "evidence_hint": "session log or reply explicitly names the hand-back"
+        },
+        {
+          "text": "Did not produce a scaffolded app (src/ files, chosen DB/framework) in outputs/",
+          "evidence_hint": "outputs/ directory contains no speculative app implementation"
+        }
+      ]
+    }
+  ]
+}

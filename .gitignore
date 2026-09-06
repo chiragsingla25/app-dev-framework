@@ -1,0 +1,8 @@
+.DS_Store
+*.gif
+*.skill
+
+# skill-creator eval run outputs — regeneratable, and large (full project copies).
+# The eval definitions (evals/evals.json) and summaries (benchmark.*) stay tracked.
+*-workspace/iteration-*/
+*-workspace/*-snapshot/

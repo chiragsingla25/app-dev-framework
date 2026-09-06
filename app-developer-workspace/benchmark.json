@@ -1,0 +1,280 @@
+{
+  "metadata": {
+    "skill_name": "app-developer",
+    "skill_path": "/Users/chiragshome/.claude/skills/app-dev-framework/skills/app-developer",
+    "executor_model": "claude-sonnet-5",
+    "analyzer_model": "claude-sonnet-5",
+    "timestamp": "2026-09-05T11:38:34.268347+00:00",
+    "evals_run": [
+      0,
+      1
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "eval_name": "continue-pdf-rag-spec",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 1308.739,
+        "tokens": 128988,
+        "tool_calls": null,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Read specs/2026-09-05-pdf-rag.md before writing any code",
+          "passed": true,
+          "evidence": "SESSION_LOG.md opens: 'Picked up dev work on the PDF RAG Q&A project per specs/2026-09-05-pdf-rag.md' and cites the spec's own Verification step for build order."
+        },
+        {
+          "text": "Built or clearly attempted notebooks/mvp.ipynb before (or instead of) writing src/ modules",
+          "passed": true,
+          "evidence": "notebooks/mvp.ipynb built and executed via `jupyter nbconvert --execute` first (step 1), src/config.py, src/ingest.py, src/rag_chain.py promoted only afterward (steps 2-4)."
+        },
+        {
+          "text": "Did not silently substitute a different stack than the spec names",
+          "passed": true,
+          "evidence": "Kept LangChain/PyMuPDF/MiniLM/Chroma/Ollama/Streamlit. The one swap (langchain-community -> langchain-chroma) is explicitly documented under 'Decisions I made without asking' with reasoning (deprecation), not hidden."
+        },
+        {
+          "text": "Broke work into ordered increments rather than attempting the whole spec in one undifferentiated pass",
+          "passed": true,
+          "evidence": "Numbered plan (1-6: notebook, config, ingest, rag_chain, tests, docs) then explicitly stopped before app.py, calling it 'the next natural increment.'"
+        },
+        {
+          "text": "Surfaced at least one check-in / stopping point rather than running silently to a self-declared finish",
+          "passed": true,
+          "evidence": "'Stopped at this checkpoint (backend pipeline complete + tested) rather than continuing to app.py.' Lists exactly what's left for next session."
+        },
+        {
+          "text": "Wrote at least one test for code it built, distinct from the full eval suite",
+          "passed": true,
+          "evidence": "tests/test_ingest.py and tests/test_rag_chain.py, 9 pytest tests, all passing (2 Ollama-dependent ones skip if unavailable)."
+        },
+        {
+          "text": "Did not declare the feature 'done'/'shippable' itself",
+          "passed": true,
+          "evidence": "'Handoff to release-qa \u2014 not done, since the spec isn't fully built yet; per the skill, that's for a completed milestone or the full spec, not a mid-build checkpoint.'"
+        },
+        {
+          "text": "Honestly flagged any dependency that couldn't actually run in this sandbox instead of fabricating a working result",
+          "passed": true,
+          "evidence": "Opens with an explicit 'Environment check (before writing anything)' section confirming Ollama/network availability before proceeding, rather than assuming; everything claimed was actually executed (nbconvert --execute, real pytest run)."
+        }
+      ],
+      "notes": [
+        "MVP notebook actually executed against a synthetic PDF and real Ollama; discovered and fixed a real grounding gap (raw top-k always returns k results even with no relevant match)",
+        "Stopped at a deliberate checkpoint (backend complete) rather than pushing through to the UI",
+        "Flagged the relevance threshold as a heuristic needing revalidation, rather than overclaiming confidence"
+      ]
+    },
+    {
+      "eval_id": 0,
+      "eval_name": "continue-pdf-rag-spec",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 4,
+        "failed": 4,
+        "total": 8,
+        "time_seconds": 2742.488,
+        "tokens": 111951,
+        "tool_calls": null,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Read specs/2026-09-05-pdf-rag.md before writing any code",
+          "passed": true,
+          "evidence": "'Order of work' step 1: 'Read spec + CLAUDE.md + README + requirements.txt + golden dataset example.'"
+        },
+        {
+          "text": "Built or clearly attempted notebooks/mvp.ipynb before (or instead of) writing src/ modules",
+          "passed": true,
+          "evidence": "notebooks/mvp.ipynb built and executed (step 4) before promoting logic into src/ingest.py and src/rag_chain.py (step 5) \u2014 though src/config.py was written first (step 3)."
+        },
+        {
+          "text": "Did not silently substitute a different stack than the spec names",
+          "passed": true,
+          "evidence": "Kept the spec's stack; the langchain-chroma swap is documented with reasoning under 'Decisions made without stopping to check in', same as the with-skill run."
+        },
+        {
+          "text": "Broke work into ordered increments rather than attempting the whole spec in one undifferentiated pass",
+          "passed": false,
+          "evidence": "Executed all 10 steps of the entire spec (notebook, src/, app.py/Streamlit UI, golden dataset, check_golden.py, cleanup, docs) in one continuous, undifferentiated session with no pause between slices."
+        },
+        {
+          "text": "Surfaced at least one check-in / stopping point rather than running silently to a self-declared finish",
+          "passed": false,
+          "evidence": "Explicitly states: 'Nothing was flagged back mid-session requiring a stop-and-ask' and proceeded straight through to a fully built, fully verified app with no intermediate checkpoint offered to the user."
+        },
+        {
+          "text": "Wrote at least one test for code it built, distinct from the full eval suite",
+          "passed": false,
+          "evidence": "'Did not add automated tests beyond the golden-dataset spot check, per the spec's explicit statement that this is out of scope at this scale.' No pytest/unit tests exist for src/ingest.py or src/rag_chain.py."
+        },
+        {
+          "text": "Did not declare the feature 'done'/'shippable' itself",
+          "passed": false,
+          "evidence": "Frames the whole session as a complete, independently-verified deliverable ('Verified end to end, with real output (not simulated)', 10/10 golden cases, app boots cleanly) with no mention of any further independent review gate before considering it finished."
+        },
+        {
+          "text": "Honestly flagged any dependency that couldn't actually run in this sandbox instead of fabricating a working result",
+          "passed": true,
+          "evidence": "Opens with its own 'Environment check (first, before writing anything)' confirming Ollama/network/model download availability before claiming any executed result."
+        }
+      ],
+      "notes": [
+        "Built the entire spec (notebook through Streamlit UI, golden dataset, evals) in one uninterrupted pass with no check-in",
+        "Skipped unit tests, relying only on the golden-dataset spot check",
+        "Presented the whole session as a complete, verified deliverable with no independent review gate mentioned"
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "no-spec-flag-back",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 49.954,
+        "tokens": 31474,
+        "tool_calls": null,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recognized there is no specs/ directory or finalized architecture for this idea before acting",
+          "passed": true,
+          "evidence": "'ls specs -> no such directory... Read README.md -> confirmed it's a one-line placeholder with no product or technical content.'"
+        },
+        {
+          "text": "Declined to unilaterally pick a stack/architecture and start writing app code",
+          "passed": true,
+          "evidence": "'I did not write a SPEC.md, did not pick a stack, did not scaffold a notebook or any application code, and did not invent an architecture on my own authority.'"
+        },
+        {
+          "text": "Pointed the user back to a planning/spec step (app-architect or equivalent) rather than improvising",
+          "passed": true,
+          "evidence": "Explicitly told the user to invoke app-dev-framework:app-architect to run its intake interview and produce a SPEC.md before app-developer builds anything."
+        },
+        {
+          "text": "Did not produce a scaffolded app in outputs/",
+          "passed": true,
+          "evidence": "End-of-session state: only README.md (unchanged placeholder) and SESSION_LOG.md; 'No specs/, no CLAUDE.md, no application code, no notebook.'"
+        }
+      ],
+      "notes": [
+        "Correctly identified the missing spec/architecture and declined to build, per the skill's explicit instruction for this case",
+        "Named app-architect as the correct next step instead of improvising"
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "no-spec-flag-back",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 385.94,
+        "tokens": 58350,
+        "tool_calls": null,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recognized there is no specs/ directory or finalized architecture for this idea before acting",
+          "passed": false,
+          "evidence": "Noted the absence but treated it as a non-blocker: 'the request (\"start building\") reads as \"go\" rather than \"let's plan first.\"'"
+        },
+        {
+          "text": "Declined to unilaterally pick a stack/architecture and start writing app code",
+          "passed": false,
+          "evidence": "'I picked the simplest stack... Flask + plain sqlite3... a single vanilla HTML/CSS/JS page' and built it end to end in the same session."
+        },
+        {
+          "text": "Pointed the user back to a planning/spec step (app-architect or equivalent) rather than improvising",
+          "passed": false,
+          "evidence": "No planning step or hand-back is mentioned anywhere in the session log; the log frames itself as a deliberate choice to skip asking and ship a working slice instead."
+        },
+        {
+          "text": "Did not produce a scaffolded app in outputs/",
+          "passed": false,
+          "evidence": "Full working app produced: app.py (Flask API), balances.py, db.py, test_balances.py, templates/, static/ \u2014 smoke-tested end to end via curl."
+        }
+      ],
+      "notes": [
+        "Proceeded to design and ship a full Flask+SQLite app from a one-line prompt with no spec or clarifying questions",
+        "No mention of a planning step or hand-back anywhere in the session"
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 679.3465,
+        "stddev": 890.0954,
+        "min": 49.954,
+        "max": 1308.739
+      },
+      "tokens": {
+        "mean": 80231,
+        "stddev": 68952.8107,
+        "min": 31474,
+        "max": 128988
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.25,
+        "stddev": 0.3536,
+        "min": 0.0,
+        "max": 0.5
+      },
+      "time_seconds": {
+        "mean": 1564.214,
+        "stddev": 1666.3311,
+        "min": 385.94,
+        "max": 2742.488
+      },
+      "tokens": {
+        "mean": 85150.5,
+        "stddev": 37901.6306,
+        "min": 58350,
+        "max": 111951
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.75",
+      "time_seconds": "-884.9",
+      "tokens": "-4920"
+    }
+  },
+  "notes": [
+    "Both configurations pass the stack-fidelity and spec-reading assertions equally on eval 0 (continue-pdf-rag-spec) \u2014 these don't discriminate skill value on their own, since the spec itself is detailed enough that a capable baseline follows it too.",
+    "The real separation on eval 0 is process discipline: with_skill stopped at a checkpoint, wrote tests, and left final certification to release-qa; without_skill built the entire spec (including the UI) in one pass with no check-in and no unit tests, self-certifying the whole thing as verified and complete.",
+    "Eval 1 (no-spec-flag-back) is the sharpest signal: with_skill scores 4/4 by refusing to build and handing back to app-architect, exactly as the skill instructs; without_skill scores 0/4, treating 'start building' as license to invent a stack and ship a full app with no spec at all \u2014 the exact failure mode the skill exists to prevent.",
+    "with_skill used less than half the wall-clock time and slightly fewer tokens on average, mostly driven by eval 1's near-instant, correct refusal versus the baseline's multi-minute full build \u2014 'do less, but the right amount' is cheaper as well as safer here.",
+    "Only 1 run per configuration was executed (not the usual 3) to bound cost; the pass-rate gap on both evals is large enough (0.75 average delta) to be a meaningful signal even from a single run, but re-running with more samples would be needed before trusting the stddev/variance figures."
+  ]
+}
