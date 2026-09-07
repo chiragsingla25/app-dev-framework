@@ -52,6 +52,9 @@ project/
 │   ├── agents/                # subagent defs: reviewer.md, debugger.md, data-scientist.md
 │   ├── workflows/              # saved dynamic workflows (large audits, migrations)
 │   └── settings.json          # hooks, permissions, allowed tools
+├── docs/
+│   └── proposal.md            # the approved scoping doc — written and signed off before scaffold
+├── .env.example               # names every required key/secret; real .env is gitignored, filled by hand
 ├── specs/
 │   └── 2026-09-05-claim-router.md
 ├── notebooks/
@@ -68,7 +71,7 @@ project/
 └── README.md
 ```
 
-Check `CLAUDE.md`, `.claude/`, `specs/`, and `evals/` into git. They compound in value across every future session — a teammate (or future-you) opens the repo and Claude is already calibrated.
+Check `CLAUDE.md`, `.claude/`, `docs/`, `specs/`, and `evals/` into git. They compound in value across every future session — a teammate (or future-you) opens the repo and Claude is already calibrated. **Never check in `.env` or real secrets** — `.env.example` lists the *names* of what's needed; the values live only in an untracked `.env` the person fills in. Proprietary APIs and org services are integrated through a scoped MCP server, not by pasting keys into config.
 
 ---
 
@@ -85,8 +88,9 @@ specs/YYYY-MM-DD-feature-name.md.
 ```
 
 A good spec:
+- Opens with **Prior art & scope rationale** — 2-3 comparable products, what's table-stakes (build early), what's overkill for this scale/purpose (cut explicitly), and the UX patterns worth copying. Don't invent from scratch what already has known-good shapes. If nothing comparable exists, say so and raise the verification bar to match.
 - Names the specific files and interfaces involved
-- States what's explicitly **out of scope**
+- States what's explicitly **out of scope** — the "overkill" list from prior art feeds straight into this
 - Ends with a verification step that proves the feature works (a test to pass, a screenshot to match, an eval score to hit)
 - For anything beyond a trivial change, breaks the build into named, ordered phases with a hard approval gate between them (§3a) — not one undifferentiated block of work
 
@@ -250,6 +254,22 @@ A generic "does this match your read?" is a start, but it's easy to rubber-stamp
 
 ---
 
+## 7c. Delivery model: how the build is executed, separate from what it is
+
+The architecture pattern (§7) is about the *app*. The delivery model is about the *build process* — who implements it and how the work is divided. Pick the least machinery that fits, and justify anything past the default by naming what requires it.
+
+| Model | Use when | Cost you're taking on |
+|---|---|---|
+| **Single generalist developer, end to end** *(default)* | Almost everything short of a large build. One builder holds the whole picture — logic, frontend, backend — and works in dependency order. | None beyond the build itself. |
+| **Generalist + review gates** | The build is quality-sensitive, or touches something that has to be right. A fresh-context reviewer (§6 item 5, or `/code-review`) critiques at each phase boundary before it's accepted. | One extra review pass per phase. Worth it for correctness-critical work; overkill for a throwaway demo. |
+| **Generalist + parallel subagents for named independent chunks + review gates** | The build genuinely contains parallelizable work: chunks with a clean interface and little shared state — several unrelated endpoints, independent integrations, a batch of isolated components. Name the chunks and the shared contract/types file up front; build that contract first. | Coordination + reconciliation. Only pays off when the chunks are actually independent. |
+
+**A blanket "frontend agent + backend agent" split is not the third model.** Frontend and backend share the API contract, data models, and types — they drift apart when built in parallel, and reconciling the drift costs more than the parallelism saves. Parallelize genuinely independent slices, not layers of the same feature. The "continuous review" instinct is real and valuable — deliver it through review gates, not through a supervisor agent watching a builder agent, which isn't a capability that exists.
+
+Record the chosen model and its justification in `docs/proposal.md` so app-developer executes the build the way it was scoped, not by its own default.
+
+---
+
 ## 8. Deployment: match the target to the app's shape
 
 > **On the specifics:** this table names categories and example providers as of when this was written. Hosting options and pricing shift constantly — research current fits for the project's actual requirements (budget, GPU need, expected traffic) rather than picking a name off this list on autopilot.
@@ -290,6 +310,11 @@ The point: a PR can't merge if the eval score regresses, not just if unit tests 
 
 ## 10. One-page checklist
 
+- [ ] Prior art researched — 2-3 comparable products, table-stakes vs overkill named, before the spec is written
+- [ ] Resource & capability inventory taken at intake (local machine, existing accounts, proprietary APIs, budget tier) and written into CLAUDE.md
+- [ ] `docs/proposal.md` written and explicitly approved before any scaffolding
+- [ ] Delivery model (single dev / + review gates / + parallel subagents for named chunks) chosen and justified in the proposal
+- [ ] Secrets kept out of git — `.env.example` names them, real `.env` is untracked and hand-filled
 - [ ] Spec written and reviewed before implementation starts
 - [ ] Spec breaks the build into named phases with a hard approval gate between them, not one undifferentiated build
 - [ ] Each phase gets its own short clarify pass before work starts, not just one clarify pass at the very beginning
