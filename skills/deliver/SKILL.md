@@ -54,15 +54,22 @@ Ask them to approve, or to change features or stages. Do not start building unti
 For each feature F:
 
 1. Delegate to `consultancy:builder` with: RUN, the feature id, and the attempt number (start at 1). For attempt 2 and later, also give it the path of the last QA report for F.
-2. If `qa` is in the plan, delegate to `consultancy:qa` with: RUN, the feature id and the attempt number. It writes `RUN/qa/F-xxx-attempt-N.md`, whose first line is `VERDICT: PASS` or `VERDICT: FAIL`. Read that line yourself; do not rely on the agent's summary.
-3. On PASS (or after build when `qa` is skipped): commit.
+2. If `qa` is in the plan, delegate to `consultancy:qa` with: RUN, the feature id and the attempt number. It writes `RUN/qa/F-xxx-attempt-N.md`, whose first line is `VERDICT: PASS`, `VERDICT: FAIL` or `VERDICT: OBJECTION` (see Objections below). Read that line yourself; do not rely on the agent's summary.
+3. On PASS (or after build when `qa` is skipped): run `git status --short` and check nothing generated (caches, build output, scratch files) is about to be committed; if it is, add it to `.gitignore` first. Then commit:
    `git add -A && git commit -m "F-xxx: <title>" -m "Run: <run folder name>"`
 4. On FAIL: go back to step 1 with the next attempt number. After attempt 3 fails, stop the loop and bring it to the user: what failed, the QA report path, and your view of whether the feature or the approach is wrong. Wait for their call.
+
+### Objections
+
+When QA returns `VERDICT: OBJECTION`, or the builder replies `objection:`, an agent is saying the spec itself is wrong. Nobody rules on a domain they don't own; for now the user owns the requirements. Show the user the objection and the proposed wording, and ask for a ruling. Then:
+1. Append to `RUN/decisions.md`: the feature, the criterion, who objected, the objection, the ruling, and the reason.
+2. If the ruling changes the criterion, edit `RUN/features.json` accordingly and re-run `features`.
+3. Re-run QA for that feature. An objection does not count as an attempt.
 
 If the builder reports that a feature is much bigger than intake assumed, or depends on something not in the plan, pause and ask the user whether to re-plan. Do not quietly expand scope.
 
 ## 6. Close
 
-Write `RUN/summary.md`: the request, the plan and reason, and per feature the attempts taken, the final verdict and the commit hash (`git log --oneline`). Commit it with the message `Run summary: <run folder name>`.
+Write `RUN/summary.md`: the request, the plan and reason, per feature the attempts taken, the final verdict and the commit hash (`git log --oneline`), and any rulings from `decisions.md`. Commit it with the message `Run summary: <run folder name>`.
 
 Tell the user in two or three sentences what was built, anything that failed or was skipped, and where the summary is.

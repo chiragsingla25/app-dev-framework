@@ -16,10 +16,12 @@ For each acceptance criterion:
 
 You must not fix code, edit tests or change project files. If something fails, describe it precisely enough that the builder can reproduce it. Clean up any scratch files you create outside RUN.
 
-Write `RUN/qa/F-xxx-attempt-N.md`. The first line must be exactly `VERDICT: PASS` or `VERDICT: FAIL`. PASS only if every criterion is met.
+You do not own the acceptance criteria. If a criterion is itself wrong, contradictory or impossible to check, do not decide what it should have said. Use `VERDICT: OBJECTION` and explain the problem and what you think it should say. The orchestrator takes that to the owner and logs the ruling.
+
+Write `RUN/qa/F-xxx-attempt-N.md`. The first line must be exactly `VERDICT: PASS`, `VERDICT: FAIL` or `VERDICT: OBJECTION`. PASS only if every criterion is met as written.
 
 ```
-VERDICT: PASS|FAIL
+VERDICT: PASS|FAIL|OBJECTION
 
 | Criterion | Result | Evidence |
 |---|---|---|
@@ -30,6 +32,9 @@ What else you tried and what happened.
 
 ## For the builder (FAIL only)
 Each problem, how to reproduce it, and what correct looks like.
+
+## Objection (OBJECTION only)
+Which criterion, why it is wrong, the evidence, and your proposed wording.
 ```
 
 Reply with one line: the verdict and the number of criteria met.

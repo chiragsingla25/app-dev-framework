@@ -28,7 +28,9 @@ A JSON list. Each feature is one piece of behaviour a user could notice, small e
 ]
 ```
 
-Rules for acceptance criteria: each one must be something QA can verify by running a command, reading output or inspecting a file. "Works well", "is clean", "is fast" are not criteria. Include at least one edge or failure case for any feature that takes input. Prefer fewer, larger-grained features over many tiny ones; a small script is usually one feature.
+Rules for acceptance criteria: each one must be something QA can verify by running a command, reading output or inspecting a file. "Works well", "is clean", "is fast" are not criteria. Include at least one edge or failure case for any feature that takes input.
+
+Rules for splitting: a feature is something a user would name on its own ("export to CSV", "login"). Error handling, input validation and argument parsing for a feature are acceptance criteria of that feature, never features of their own. A small request is almost always one feature; split only when the parts could sensibly ship separately.
 
 ## RUN/intake.md
 

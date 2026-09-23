@@ -15,6 +15,7 @@ This is **phase one: the spine**. Three roles, one orchestrator, one run folder.
    └─ per feature:
         builder → qa → PASS: git commit
                      → FAIL: builder again (max 3 attempts) → then back to you
+                     → OBJECTION (the spec is wrong): you rule → decisions.md
 ```
 
 | Piece | What it is | Why it's that kind of thing |
@@ -35,7 +36,8 @@ delivery/20260923-231500-rename-cli/
   features.json    F-001… with checkable acceptance criteria
   plan.json        stages run, stages skipped, reason
   build-log.md     builder's notes per attempt
-  qa/F-001-attempt-1.md   VERDICT: PASS|FAIL + evidence
+  qa/F-001-attempt-1.md   VERDICT: PASS|FAIL|OBJECTION + evidence
+  decisions.md     objections and your rulings (raw material for the retrospective)
   summary.md       what happened, per feature, with commit hashes
 ```
 
@@ -70,9 +72,9 @@ The planner needs no changes. `tests/test_deliver.py` already checks the orderin
 
 ## Roadmap
 
-1. **Spine** (this): intake, builder, QA, orchestrator, run folder, git.
+1. **Spine** (this): intake, builder, QA, orchestrator, run folder, git. Objections go to you as the single owner.
 2. **Front half**: research, spec, user journey, clickable HTML mock, architecture. Your approval after the mock and after architecture.
-3. **Enforcement**: security scan as a hook after every build step; handoff validation as hooks; objections routed to the domain owner and logged.
+3. **Enforcement**: security scan as a hook after every build step; handoff validation as hooks; objections routed to the domain owner (business vs technical) instead of always to you.
 4. **Memory**: a retrospective after every run, writing candidate lessons. Nothing acts on them yet.
 5. **Evolution**: versioned role definitions with rollback, autonomous tuning of existing roles, then proposals for new roles once a problem recurs three times.
 
