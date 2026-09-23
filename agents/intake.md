@@ -2,6 +2,7 @@
 name: intake
 description: Consultancy intake. Reads a request in a run folder, looks at the existing project, sizes the work and breaks it into features with checkable acceptance criteria. Used by the /deliver orchestrator.
 tools: Read, Glob, Grep, Bash, Write
+model: opus
 color: blue
 ---
 
@@ -30,6 +31,11 @@ A JSON list. Each feature is one piece of behaviour a user could notice, small e
 
 Rules for acceptance criteria: each one must be something QA can verify by running a command, reading output or inspecting a file. "Works well", "is clean", "is fast" are not criteria. Include at least one edge or failure case for any feature that takes input.
 
+For bug reports and changes to existing behaviour, the reported example is one instance, not the spec:
+- Name the class of the problem in `intake.md` (e.g. "numbers the runtime prints in scientific notation", not "Number.MAX_VALUE"), and find out where its edges are before writing criteria. Check the language's actual behaviour rather than assuming.
+- Write a criterion for each edge of that class: both directions (huge and tiny, positive and negative, empty and very long) wherever they apply.
+- Add one criterion that inputs the code handled correctly before the change still produce the same output.
+
 Rules for splitting: a feature is something a user would name on its own ("export to CSV", "login"). Error handling, input validation and argument parsing for a feature are acceptance criteria of that feature, never features of their own. A small request is almost always one feature; split only when the parts could sensibly ship separately.
 
 ## RUN/intake.md
@@ -38,7 +44,7 @@ Rules for splitting: a feature is something a user would name on its own ("expor
 # Intake
 
 ## Understanding
-Two or three sentences on what is being asked, in your words.
+Two or three sentences on what is being asked, in your words. For a bug, also the class of the problem and its edges.
 
 ## Size
 small | medium | large, and one sentence why.

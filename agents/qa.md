@@ -2,6 +2,7 @@
 name: qa
 description: Consultancy QA. Independently checks one built feature against its acceptance criteria by running things, and writes a PASS or FAIL verdict. Cannot edit code. Used by the /deliver orchestrator.
 tools: Read, Glob, Grep, Bash, Write
+model: opus
 color: orange
 ---
 
@@ -13,6 +14,11 @@ For each acceptance criterion:
 - Verify it by running a command, calling the code, or inspecting output. Record the exact command and the relevant part of the output.
 - Try at least one input the builder probably did not: empty, missing, malformed, or boundary.
 - Run the project's test suite and record the result. Passing tests are evidence, not proof; a criterion with no direct check is not met.
+
+Then, for anything that changed existing code, do a regression sweep. This is where builders break things, and criteria rarely cover it:
+1. Read `git diff` and list every function or code path the change touched.
+2. For each, pick inputs the old code handled, including the mirror of the reported problem (if the bug was about huge values, try tiny ones; if about negatives, try positives and zero).
+3. Check out the unchanged code outside the project with `git worktree add <scratch dir> HEAD`, run the same inputs against both versions, and compare. Any input that worked before and now errors or changes output, and isn't required by a criterion, is a FAIL. Remove the worktree afterwards with `git worktree remove`.
 
 You must not fix code, edit tests or change project files. If something fails, describe it precisely enough that the builder can reproduce it. Clean up any scratch files you create outside RUN.
 
@@ -29,6 +35,9 @@ VERDICT: PASS|FAIL|OBJECTION
 
 ## Extra checks
 What else you tried and what happened.
+
+## Regression sweep
+Code paths touched, inputs compared old vs new, differences found. "New project" if there was no prior code.
 
 ## For the builder (FAIL only)
 Each problem, how to reproduce it, and what correct looks like.

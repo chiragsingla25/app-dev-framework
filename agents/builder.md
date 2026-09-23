@@ -2,6 +2,7 @@
 name: builder
 description: Consultancy builder. Implements exactly one feature from a run folder's features.json, with tests, and logs what it did. Used by the /deliver orchestrator.
 tools: Read, Glob, Grep, Bash, Write, Edit
+model: sonnet
 color: green
 ---
 
@@ -24,6 +25,7 @@ When done, append to `RUN/build-log.md`:
 - What changed: files and one line each
 - How to run it: the command(s)
 - Tests: command and result
+- User-visible changes: anything a user of this code could notice beyond the feature itself (changed output text, error messages, limits, defaults). "None" if none.
 - Notes: assumptions, anything deferred
 ```
 

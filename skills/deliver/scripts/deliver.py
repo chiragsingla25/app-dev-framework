@@ -15,6 +15,7 @@ import argparse
 import datetime as dt
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -131,14 +132,42 @@ def slugify(text: str, limit: int = 40) -> str:
 
 # ---------- CLI ----------
 
+def exclude_locally(project: Path, pattern: str = "/delivery/") -> Path:
+    """Add pattern to the repo's .git/info/exclude (a local, never-committed ignore)."""
+    out = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=project,
+                         capture_output=True, text=True)
+    if out.returncode != 0:
+        raise PlanError(f"{project} is not a git repository")
+    git_dir = Path(out.stdout.strip())
+    if not git_dir.is_absolute():
+        git_dir = project / git_dir
+    exclude = git_dir / "info" / "exclude"
+    exclude.parent.mkdir(parents=True, exist_ok=True)
+    lines = exclude.read_text().splitlines() if exclude.exists() else []
+    if pattern not in lines:
+        with exclude.open("a") as fh:
+            if lines and lines[-1] != "":
+                fh.write("\n")
+            fh.write(pattern + "\n")
+    return exclude
+
+
 def cmd_init(args) -> int:
     project = Path(args.project).resolve()
+    if args.private:
+        try:
+            exclude_locally(project)
+        except PlanError as e:
+            print(f"INIT ERROR: {e}", file=sys.stderr)
+            return 2
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = project / "delivery" / f"{stamp}-{slugify(args.request)}"
     run_dir.mkdir(parents=True, exist_ok=False)
     (run_dir / "request.md").write_text(f"# Request\n\n{args.request.strip()}\n")
     (run_dir / "qa").mkdir()
     print(run_dir)
+    if args.private:
+        print("Run files are excluded from git (.git/info/exclude); commits will contain project changes only.")
     return 0
 
 
@@ -186,6 +215,8 @@ def main(argv=None) -> int:
     pi = sub.add_parser("init", help="create a run folder for a request")
     pi.add_argument("request")
     pi.add_argument("--project", default=".")
+    pi.add_argument("--private", action="store_true",
+                    help="keep run files out of commits (for repos you don't own)")
     pi.set_defaults(fn=cmd_init)
 
     pp = sub.add_parser("plan", help="order the chosen stages and write plan.json")

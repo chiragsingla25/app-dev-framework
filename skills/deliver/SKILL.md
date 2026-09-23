@@ -3,7 +3,7 @@ name: deliver
 description: Run a request through the consultancy. Intake sizes it, you choose the stages it needs, then features are built and checked one at a time with a git commit per passing feature.
 argument-hint: <what you want built>
 disable-model-invocation: true
-allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/deliver.py *), Bash(git status*), Bash(git add*), Bash(git commit*), Bash(git log*), Bash(git diff*), Bash(git init*)
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/deliver.py *), Bash(git status*), Bash(git add*), Bash(git commit*), Bash(git log*), Bash(git diff*), Bash(git init*), Bash(git remote*)
 ---
 
 # You are the orchestrator
@@ -17,9 +17,10 @@ If the request is empty, ask the user what they want built and stop.
 ## 1. Set up
 
 1. Check this directory is a git repo (`git status`). If not, ask the user whether to run `git init` here. If there are uncommitted changes, tell the user and ask whether to continue; your commits must only contain this run's work.
-2. Create the run folder:
-   `python3 ${CLAUDE_SKILL_DIR}/scripts/deliver.py init "<the request>"`
-   It prints the run folder path. Call it RUN below and pass the absolute path to every agent.
+2. Decide where run files live. If the repo has a remote (`git remote -v`) that looks like someone else's project, or the request is a fix or contribution to an existing codebase the user doesn't own, keep run files out of commits with `--private`, so a pull request contains only the change. For the user's own projects, commit them; they are the project's history. When unsure, use `--private` and say so at the approval gate.
+3. Create the run folder:
+   `python3 ${CLAUDE_SKILL_DIR}/scripts/deliver.py init "<the request>" [--private]`
+   The first line it prints is the run folder path. Call it RUN below and pass the absolute path to every agent.
 
 ## 2. Intake (always)
 
@@ -70,6 +71,6 @@ If the builder reports that a feature is much bigger than intake assumed, or dep
 
 ## 6. Close
 
-Write `RUN/summary.md`: the request, the plan and reason, per feature the attempts taken, the final verdict and the commit hash (`git log --oneline`), and any rulings from `decisions.md`. Commit it with the message `Run summary: <run folder name>`.
+Write `RUN/summary.md`: the request, the plan and reason, per feature the attempts taken, the final verdict and the commit hash (`git log --oneline`), any rulings from `decisions.md`, and every user-visible change listed in `build-log.md`. Commit it with the message `Run summary: <run folder name>`, unless the run is private (then there is nothing to commit).
 
-Tell the user in two or three sentences what was built, anything that failed or was skipped, and where the summary is.
+Tell the user in two or three sentences what was built, anything that failed or was skipped, any user-visible changes beyond the request, and where the summary is.

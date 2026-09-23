@@ -109,6 +109,28 @@ class CliTests(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr)
             self.assertIn("F-001", r.stdout)
 
+    def test_private_run_is_not_committed(self):
+        with tempfile.TemporaryDirectory() as d:
+            subprocess.run(["git", "init", "-q", d], check=True)
+            r = self.run_cli("init", "fix a bug", "--project", d, "--private")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            run_dir = Path(r.stdout.splitlines()[0])
+            self.assertIn("/delivery/", (Path(d) / ".git" / "info" / "exclude").read_text())
+            status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all"],
+                                    cwd=d, capture_output=True, text=True).stdout
+            self.assertNotIn("delivery", status)
+            self.assertTrue((run_dir / "request.md").exists())
+            # running it twice doesn't duplicate the exclude line
+            self.run_cli("init", "another", "--project", d, "--private")
+            text = (Path(d) / ".git" / "info" / "exclude").read_text()
+            self.assertEqual(text.count("/delivery/"), 1)
+
+    def test_private_outside_git_fails_cleanly(self):
+        with tempfile.TemporaryDirectory() as d:
+            r = self.run_cli("init", "x", "--project", d, "--private")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("not a git repository", r.stderr)
+
     def test_plan_error_exit_code(self):
         with tempfile.TemporaryDirectory() as d:
             r = self.run_cli("plan", d, "qa")
