@@ -1,0 +1,9 @@
+{
+  "name": "consultancy",
+  "version": "0.1.0",
+  "description": "A small software organization of agents. An orchestrator sizes each request and picks only the stages it needs from a pool of roles.",
+  "author": {
+    "name": "Chirag"
+  },
+  "keywords": ["agents", "orchestration", "software-delivery"]
+}

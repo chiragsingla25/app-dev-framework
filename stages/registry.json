@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "stages": [
+    {
+      "id": "intake",
+      "agent": "consultancy:intake",
+      "always": true,
+      "needs": ["request"],
+      "produces": ["intake", "features"],
+      "description": "Understands the request and sizes it. Writes intake.md and features.json."
+    },
+    {
+      "id": "build",
+      "agent": "consultancy:builder",
+      "per_feature": true,
+      "needs": ["features"],
+      "produces": ["code"],
+      "description": "Implements one feature at a time in the project."
+    },
+    {
+      "id": "qa",
+      "agent": "consultancy:qa",
+      "per_feature": true,
+      "needs": ["features", "code"],
+      "produces": ["qa-report"],
+      "description": "Checks each feature against its acceptance criteria and returns PASS or FAIL."
+    }
+  ]
+}

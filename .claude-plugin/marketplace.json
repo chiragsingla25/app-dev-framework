@@ -1,0 +1,16 @@
+{
+  "name": "agent-consultancy",
+  "owner": {
+    "name": "Chirag"
+  },
+  "metadata": {
+    "description": "Chirag's agent consultancy: a self-evolving organization of Claude Code agents."
+  },
+  "plugins": [
+    {
+      "name": "consultancy",
+      "source": "./",
+      "description": "A small software organization of agents: intake, builder and QA, run by an orchestrator that picks only the stages a request needs."
+    }
+  ]
+}
