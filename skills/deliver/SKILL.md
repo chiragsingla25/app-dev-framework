@@ -58,6 +58,7 @@ For each feature F:
 2. If `qa` is in the plan, delegate to `consultancy:qa` with: RUN, the feature id and the attempt number. It writes `RUN/qa/F-xxx-attempt-N.md`, whose first line is `VERDICT: PASS`, `VERDICT: FAIL` or `VERDICT: OBJECTION` (see Objections below). Read that line yourself; do not rely on the agent's summary.
 3. On PASS (or after build when `qa` is skipped): run `git status --short` and check nothing generated (caches, build output, scratch files) is about to be committed; if it is, add it to `.gitignore` first. Then commit:
    `git add -A && git commit -m "F-xxx: <title>" -m "Run: <run folder name>"`
+   Then run `git status --short` again. Repos often have commit hooks or formatters that change files; if anything is left modified, run the project's formatter if it has one, stage it and `git commit --amend --no-edit`, so every commit leaves a clean tree.
 4. On FAIL: go back to step 1 with the next attempt number. After attempt 3 fails, stop the loop and bring it to the user: what failed, the QA report path, and your view of whether the feature or the approach is wrong. Wait for their call.
 
 ### Objections
