@@ -34,7 +34,8 @@ class PlanTests(unittest.TestCase):
     def test_full_phase_one(self):
         r = deliver.plan(REAL, ["qa", "build"])  # order of request doesn't matter
         self.assertEqual(r["order"], ["intake", "build", "qa"])
-        self.assertEqual(r["per_feature"], ["build", "qa"])
+        self.assertEqual(r["per_feature"], ["build"])
+        self.assertEqual(r["at_checkpoints"], ["qa"])
         self.assertEqual(r["skipped"], [])
 
     def test_qa_without_build_is_rejected(self):
@@ -68,6 +69,46 @@ class PlanTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(deliver.PlanError, "cycle"):
             deliver.plan(reg, ["a", "b"])
+
+
+class QaBatchTests(unittest.TestCase):
+    ids = ["F-001", "F-002", "F-003", "F-004"]
+
+    def test_default_is_one_round_at_the_end(self):
+        self.assertEqual(deliver.qa_batches(self.ids, []), [self.ids])
+
+    def test_checkpoints_split_the_run(self):
+        self.assertEqual(deliver.qa_batches(self.ids, ["F-002"]),
+                         [["F-001", "F-002"], ["F-003", "F-004"]])
+
+    def test_last_feature_named_twice_is_harmless(self):
+        self.assertEqual(deliver.qa_batches(self.ids, ["F-004"]), [self.ids])
+
+    def test_unknown_checkpoint(self):
+        with self.assertRaisesRegex(deliver.PlanError, "unknown feature"):
+            deliver.qa_batches(self.ids, ["F-009"])
+
+
+class VerdictTests(unittest.TestCase):
+    def test_good_round(self):
+        text = "VERDICT: FAIL\n\n## Verdicts\n- F-001: PASS\n- F-002: FAIL\n"
+        v, problems = deliver.parse_verdicts(text, ["F-001", "F-002"])
+        self.assertEqual(problems, [])
+        self.assertEqual(v, {"F-001": "PASS", "F-002": "FAIL"})
+
+    def test_missing_feature_and_wrong_overall(self):
+        text = "VERDICT: PASS\nF-001: FAIL\n"
+        _, problems = deliver.parse_verdicts(text, ["F-001", "F-002"])
+        self.assertTrue(any("no verdict line for F-002" in p for p in problems))
+        self.assertTrue(any("add up to FAIL" in p for p in problems))
+
+    def test_objection_wins_overall(self):
+        text = "VERDICT: OBJECTION\nF-001: FAIL\nF-002: OBJECTION\n"
+        self.assertEqual(deliver.parse_verdicts(text, ["F-001", "F-002"])[1], [])
+
+    def test_bad_first_line(self):
+        _, problems = deliver.parse_verdicts("All good\nF-001: PASS\n", ["F-001"])
+        self.assertTrue(any("first line" in p for p in problems))
 
 
 class FeatureTests(unittest.TestCase):
@@ -136,6 +177,93 @@ class CliTests(unittest.TestCase):
             r = self.run_cli("plan", d, "qa")
             self.assertEqual(r.returncode, 2)
             self.assertIn("add: build", r.stderr)
+
+
+class GitTests(unittest.TestCase):
+    def run_cli(self, *args):
+        return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True)
+
+    def repo(self, d):
+        for cmd in (["init", "-q"], ["config", "user.name", "t"], ["config", "user.email", "t@t"]):
+            subprocess.run(["git", *cmd], cwd=d, check=True)
+        r = self.run_cli("init", "make a thing", "--project", d)
+        run_dir = Path(r.stdout.splitlines()[0])
+        (run_dir / "features.json").write_text(json.dumps(
+            [{"id": "F-001", "title": "One", "acceptance": ["a"]},
+             {"id": "F-002", "title": "Two", "acceptance": ["b"]}]))
+        return run_dir
+
+    def git(self, d, *args):
+        return subprocess.run(["git", *args], cwd=d, capture_output=True, text=True).stdout
+
+    def test_commit_ignores_and_untracks_clutter(self):
+        with tempfile.TemporaryDirectory() as d:
+            run_dir = self.repo(d)
+            # clutter that slipped in earlier
+            (Path(d) / "src").mkdir()
+            (Path(d) / "src" / ".DS_Store").write_text("x")
+            self.git(d, "add", "-A")
+            self.git(d, "commit", "-qm", "old")
+            (Path(d) / ".DS_Store").write_text("x")
+            (Path(d) / "src" / "__pycache__").mkdir()
+            (Path(d) / "src" / "__pycache__" / "m.cpython-310.pyc").write_text("x")
+            (Path(d) / "src" / "app.py").write_text("print(1)\n")
+            r = self.run_cli("commit", str(run_dir), "-m", "F-001: One")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            tracked = self.git(d, "ls-files")
+            self.assertIn("src/app.py", tracked)
+            self.assertNotIn(".DS_Store", tracked)
+            self.assertNotIn("__pycache__", tracked)
+            gi = (Path(d) / ".gitignore").read_text()
+            self.assertIn(".DS_Store", gi)
+            self.assertIn("__pycache__/", gi)
+            self.assertEqual(self.git(d, "status", "--short").strip(), "")
+            self.assertIn(f"Run: {run_dir.name}", self.git(d, "log", "-1", "--format=%B"))
+
+    def test_commit_refuses_secrets(self):
+        with tempfile.TemporaryDirectory() as d:
+            run_dir = self.repo(d)
+            (Path(d) / ".env").write_text("KEY=1")
+            (Path(d) / ".env.example").write_text("KEY=")
+            r = self.run_cli("commit", str(run_dir), "-m", "F-001: One")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn(".env", r.stderr)
+            self.assertNotIn(".env.example", r.stderr)
+            self.assertEqual(self.git(d, "diff", "--cached", "--name-only").strip(), "")
+
+    def test_status_shows_progress(self):
+        with tempfile.TemporaryDirectory() as d:
+            run_dir = self.repo(d)
+            (Path(d) / "a.py").write_text("1\n")
+            self.run_cli("commit", str(run_dir), "-m", "F-001: One")
+            (run_dir / "qa" / "round-1.md").write_text("VERDICT: PASS\nF-001: PASS\n")
+            r = self.run_cli("status", str(run_dir))
+            self.assertEqual(r.returncode, 0, r.stderr)
+            lines = {l.split("\t")[0]: l for l in r.stdout.splitlines()}
+            self.assertIn("PASS (round-1.md)", lines["F-001"])
+            self.assertIn("\t-\t-\t", lines["F-002"])
+            self.assertIn("summary.md: not yet", r.stdout)
+
+    def test_plan_writes_qa_rounds(self):
+        with tempfile.TemporaryDirectory() as d:
+            run_dir = self.repo(d)
+            r = self.run_cli("plan", str(run_dir), "build", "qa", "--qa-after", "F-001")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("QA rounds: 2", r.stdout)
+            plan = json.loads((run_dir / "plan.json").read_text())
+            self.assertEqual(plan["qa_rounds"], [["F-001"], ["F-002"]])
+            r = self.run_cli("plan", str(run_dir), "build", "--qa-after", "F-001")
+            self.assertEqual(r.returncode, 2)
+
+    def test_verdicts_cli(self):
+        with tempfile.TemporaryDirectory() as d:
+            run_dir = self.repo(d)
+            (run_dir / "qa" / "round-1.md").write_text("VERDICT: FAIL\nF-001: PASS\nF-002: FAIL\n")
+            r = self.run_cli("verdicts", str(run_dir), "1", "--expect", "F-001", "F-002")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("F-002\tFAIL", r.stdout)
+            r = self.run_cli("verdicts", str(run_dir), "1", "--expect", "F-001")
+            self.assertEqual(r.returncode, 2)
 
 
 if __name__ == "__main__":

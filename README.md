@@ -1,6 +1,6 @@
 # agent-consultancy
 
-A small software organization made of Claude Code agents. You describe what you want; an orchestrator sizes the work, picks only the stages it needs from a pool of roles, and delivers it feature by feature with a git commit per passing feature.
+A small software organization made of Claude Code agents. You describe what you want; an orchestrator sizes the work, picks only the stages it needs from a pool of roles, and delivers it feature by feature: each feature is built and self-tested with a commit of its own, and QA checks the features in batches at checkpoints rather than after every build.
 
 This is **phase one: the spine**. Three roles, one orchestrator, one run folder. Everything later plugs into the same shape.
 
@@ -10,20 +10,22 @@ This is **phase one: the spine**. Three roles, one orchestrator, one run folder.
 /deliver "what you want"
    │
    ├─ intake (always)      → delivery/<run>/intake.md, features.json
-   ├─ orchestrator decides → plan.json  (which stages; order computed from dependencies)
-   ├─ YOU APPROVE          ← features, stages, open questions
-   └─ per feature:
-        builder → qa → PASS: git commit
-                     → FAIL: builder again (max 3 attempts) → then back to you
-                     → OBJECTION (the spec is wrong): you rule → decisions.md
+   ├─ orchestrator decides → plan.json  (stages, and QA checkpoints: default one, at the end)
+   ├─ YOU APPROVE          ← features, stages, checkpoints, open questions
+   └─ per batch of features:
+        builder → own tests green → commit  (one feature at a time)
+        QA round over the whole batch → qa/round-N.md, verdict per feature
+           PASS: done
+           FAIL: builder fixes → commit → re-check round on failed features only (max 3 rounds)
+           OBJECTION (the spec is wrong): you rule → decisions.md
 ```
 
 | Piece | What it is | Why it's that kind of thing |
 |---|---|---|
 | `skills/deliver` | The orchestrator. Runs in your main session. | It's the only part that reasons about what happens next, and only the main session can dispatch subagents to all roles. |
-| `agents/intake`, `builder`, `qa` | Roles, as subagents | Each gets its own context. QA can't edit code and doesn't trust the build log, so it can't be talked into a pass. |
+| `agents/intake`, `builder`, `qa` | Roles, as subagents | Each gets its own context. The builder's tests gate each commit. QA can't edit code and doesn't trust the build log; it checks a batch in one round, cites sound tests instead of re-doing them, and spends its time on untested criteria and regressions. |
 | `stages/registry.json` | The pool of stages, each declaring what it `needs` and `produces` | The orchestrator picks stages; the order falls out of the dependencies. |
-| `skills/deliver/scripts/deliver.py` | Deterministic helpers: `init`, `plan`, `features` | Anything that shouldn't be a judgement call (ordering, handoff validation) is code, not prompt. |
+| `skills/deliver/scripts/deliver.py` | Deterministic helpers: `init`, `plan` (incl. QA rounds), `features`, `verdicts`, `commit` (no clutter, no secrets), `status` (resume) | Anything that shouldn't be a judgement call (ordering, handoff validation) is code, not prompt. |
 | `delivery/<run>/` in your project | The shared folder | Agents coordinate through files, never by relaying each other's words. |
 | git | Version control and audit trail | One commit per feature that passed QA, plus a run summary. |
 
@@ -36,7 +38,7 @@ delivery/20260923-231500-rename-cli/
   features.json    F-001… with checkable acceptance criteria
   plan.json        stages run, stages skipped, reason
   build-log.md     builder's notes per attempt
-  qa/F-001-attempt-1.md   VERDICT: PASS|FAIL|OBJECTION + evidence
+  qa/round-1.md    VERDICT line, then one 'F-xxx: PASS|FAIL|OBJECTION' per feature, + evidence
   decisions.md     objections and your rulings (raw material for the retrospective)
   summary.md       what happened, per feature, with commit hashes
 ```

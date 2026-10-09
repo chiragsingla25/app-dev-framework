@@ -55,6 +55,9 @@ What is already here that matters (language, structure, test command). "Empty di
 ## Recommended stages
 Which of the available stages this needs and why. Available now: build, qa.
 
+## Risky foundations
+Features that later features build on and that would be expensive to redo if wrong (a storage format, a design doc, an API other features call). These are candidates for an early QA checkpoint. "None" is the usual answer.
+
 ## Assumptions
 Decisions you made where the request was silent.
 

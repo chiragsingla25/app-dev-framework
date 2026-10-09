@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "stages": [
     {
       "id": "intake",
@@ -15,15 +15,15 @@
       "per_feature": true,
       "needs": ["features"],
       "produces": ["code"],
-      "description": "Implements one feature at a time in the project."
+      "description": "Implements one feature at a time and runs its own tests before handing back."
     },
     {
       "id": "qa",
       "agent": "consultancy:qa",
-      "per_feature": true,
+      "at_checkpoints": true,
       "needs": ["features", "code"],
       "produces": ["qa-report"],
-      "description": "Checks each feature against its acceptance criteria and returns PASS or FAIL."
+      "description": "At each QA checkpoint, checks every feature built since the last one, in one round."
     }
   ]
 }
