@@ -204,11 +204,15 @@ Skip planning for genuinely small changes (a typo, a log line) — it's overhead
 
 **Clarify before each phase, not just once at the start.** Before beginning a phase's own Explore→Plan→Implement→Commit loop — including phase 1 — run a short clarify pass: up to ~5 targeted questions resolving ambiguity specific to *that phase's* scope (not the whole project again), fold the answers into that phase's section of the spec, then proceed. This is Spec Kit's `/clarify` gate applied recurringly: ambiguity that isn't visible until a phase is actually in front of you doesn't get papered over by a plan made phases earlier. Skip it only when a phase is genuinely unambiguous — say so rather than skipping silently.
 
+Before folding a clarification's answers into the spec, check them against the spec's stated **Goal** (§1) and any **architecture assumption** they touch. A clarification that narrows the goal (an eval that no longer scores what the project exists to measure), picks an environment the architecture didn't assume, or swaps a stack choice the plan was sized against (a model/provider with a different quota) is not a phase detail to absorb — it's a flag-back to app-architect. Fold in the ones that resolve genuine local ambiguity; escalate the ones that move the project off its approved shape.
+
 **Delegate research to subagents**, not your main thread: *"use subagents to investigate how our auth handles token refresh"* keeps your context clean for the actual implementation.
 
 ### MVP first: validate before you scaffold
 
 For a new idea, or a pattern you haven't built before, don't start the four-phase loop against the full scaffolded repo. Build a single Jupyter notebook first — `notebooks/mvp.ipynb` — with one cell per step of the spec's core flow, run top to bottom. In this pass, one developer owns everything: the data/model/agent logic and whatever minimal output the idea needs to be checked (a printed result, a rendered dataframe, a quick plot, an inline widget) — no frontend/backend split, no services, no proper module structure. The only question the notebook has to answer is whether the idea actually works end to end.
+
+**Make that check load-bearing, or say it isn't.** Two ways it comes back a false "validated": *too few cases* — a handful of hand-picked inputs won't surface a failure that only shows up systematically, so run enough varied cases, the awkward ones included, that a recurring failure would actually appear; and *wrong environment* — a GPU model on a machine with no GPU, or a paid API on a small free quota, tests the environment, not the idea. Run the notebook where the app will actually run, or the closest thing to it; if you can't, mark the result provisional rather than "validated."
 
 Show the notebook's output before investing in the real build. If the core idea doesn't hold up, that's a cheap finding — cheaper than discovering it three files into a scaffolded repo. If it does, promote the validated logic into the real structure (§2) for the ordered-increment build; the notebook becomes disposable scratch work, not a dependency of the shipped app, and doesn't go through Verify or Ship itself.
 
