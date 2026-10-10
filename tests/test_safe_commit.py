@@ -72,6 +72,18 @@ class Cli(unittest.TestCase):
             self.assertNotIn(".env.example", r.stderr)
             self.assertEqual(git(d, "diff", "--cached", "--name-only").strip(), "")
 
+    def test_scratch_worktree_inside_repo_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            new_repo(d)
+            (Path(d) / "a.py").write_text("1\n")
+            git(d, "add", "-A"); git(d, "commit", "-qm", "base")
+            subprocess.run(["git", "worktree", "add", "-q", "scratch", "HEAD"], cwd=d, check=True)
+            (Path(d) / "b.py").write_text("2\n")
+            r = run(d, "-m", "x")
+            self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+            self.assertIn("scratch", r.stderr)
+            self.assertEqual(git(d, "diff", "--cached", "--name-only").strip(), "")
+
     def test_nothing_to_commit(self):
         with tempfile.TemporaryDirectory() as d:
             new_repo(d)

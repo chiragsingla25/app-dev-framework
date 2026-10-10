@@ -5,7 +5,9 @@
 
 Before staging, adds any OS/tool clutter it finds (.DS_Store, __pycache__/,
 *.pyc, Thumbs.db ...) to .gitignore and untracks copies already committed.
-After `git add -A`, refuses (and unstages) if anything looks like a secret.
+After `git add -A`, refuses (and unstages) if anything looks like a secret,
+or if a nested git checkout (e.g. a scratch worktree made inside the repo)
+would be committed.
 After committing, warns if the tree is still dirty (a hook or formatter
 changed files), so every commit leaves a clean tree.
 
@@ -60,6 +62,19 @@ def is_secret(path: str) -> bool:
     return name not in SECRET_OK and any(fnmatch.fnmatch(name, p) for p in SECRETS)
 
 
+def new_gitlinks(repo: Path) -> list[str]:
+    """Staged entries that newly add a nested repository (mode 160000)."""
+    out = git(repo, "diff", "--cached", "--raw", "-z")
+    fields = [f for f in out.split("\0")]
+    found = []
+    for i, f in enumerate(fields):
+        if f.startswith(":"):
+            parts = f[1:].split()
+            if len(parts) >= 5 and parts[0] == "000000" and parts[1] == "160000":
+                found.append(fields[i + 1])
+    return found
+
+
 def clean_junk(repo: Path) -> list[str]:
     tracked = [p for p in git(repo, "ls-files", "-z").split("\0") if p]
     untracked = [p for p in git(repo, "ls-files", "-z", "--others", "--exclude-standard").split("\0") if p]
@@ -98,6 +113,12 @@ def main(argv=None) -> int:
             print(line)
         git(repo, "add", "-A")
         staged = [p for p in git(repo, "diff", "--cached", "--name-only", "-z").split("\0") if p]
+        nested = new_gitlinks(repo)
+        if nested:
+            git(repo, "reset", "-q")
+            print("REFUSED: these are nested git checkouts (a scratch worktree inside the repo?): "
+                  + ", ".join(nested) + ". Remove them or make them outside the repo.", file=sys.stderr)
+            return 2
         secrets = [p for p in staged if is_secret(p)]
         if secrets:
             git(repo, "reset", "-q")
