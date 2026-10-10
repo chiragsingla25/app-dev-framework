@@ -52,13 +52,21 @@ approve docs/proposal.md" gate. Other four skills untouched.
 - 2.3 Parallel subagent chunks only where 1.4 flagged them: shared contract/types file
   written first, then reconcile + review pass.
 
-## Workstream 3 — Verification · PARTLY DONE 2026-10-10 (3.1 done; 3.2 open; 3.3 partly — a fresh-context `agents/reviewer.md` was added from agent-consultancy evidence, but `/code-review` and `security-review` are not wired in yet; owner to decide whether the reviewer replaces or complements them)
+## Workstream 3 — Verification · PARTLY DONE 2026-10-10 (3.1 done; 3.2 open; 3.3 replaced for now by `agents/reviewer.md`, split into 3.3a/3.3b below)
 
 - 3.1 `framework.md` §3a: every phase checkpoint is a literal `Verify: run X → you should see Y`.
   `app-developer` runs it before declaring the phase done.
 - 3.2 Scaffold a commented-out phase-gate hook (`.claude/settings.json`) that runs the
   checkpoint command and surfaces pass/fail. Opt-in per project.
-- 3.3 `release-qa` explicitly runs `/code-review` and `security-review` instead of reinventing review.
+- 3.3 ~~`release-qa` explicitly runs `/code-review` and `security-review` instead of reinventing review.~~
+  **Decision 2026-10-10:** the fresh-context `agents/reviewer.md` (imported from agent-consultancy, v1.2.0)
+  replaces both for now. Add them back only if a real project shows a gap the reviewer missed, recorded
+  as a Deviations entry and carried into the ledger, so `distill` can weigh it:
+  - 3.3a `/code-review` as a second reviewer at the milestone, *if* the reviewer keeps missing
+    convention or code-quality issues the person then has to catch.
+  - 3.3b `security-review` at the milestone, *if* a project touches auth, secrets, input limits or
+    validation, or a security-relevant change slips through (the vercel/ms length-cap change in
+    `references/evidence/` passed only because QA happened to check it).
 
 ## Workstream 4 — Standards & the light retro · ALONGSIDE
 
