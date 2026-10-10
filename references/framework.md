@@ -104,10 +104,13 @@ Name the phases in the spec itself; don't leave decomposition to whoever happens
 
 Format, inside the spec:
 - **Phase N: <name>** — what it delivers, in one line
-- Its own concrete checkpoint — a notebook cell that runs, a screen that renders, an eval that passes — proof it's actually done, not just "code written"
+- Its own concrete checkpoint — a notebook cell that runs, a screen that renders, an eval that passes — proof it's actually done, not just "code written". Write it as a literal **`Verify: run <command> → you should see <result>`**, so whoever checks it runs the same thing
+- **Acceptance criteria** — a short list of checkable statements, each one verifiable by running a command, reading output, or inspecting a file. "Works well", "is clean", "is fast" are not criteria. Any phase that takes input gets at least one failure or edge case. Error handling, validation and argument parsing are criteria of the phase that needs them, never phases of their own
 - Ordered by dependency: smallest independently-verifiable slice first (one endpoint, one component, one agent node — see §5)
 
 **Each phase is a hard gate.** The builder implements one phase fully, reports what's built and what it verified, and stops — the next phase does not start until the person gives explicit go-ahead. This is stronger than the routine per-increment check-in inside a phase (§5): a phase boundary is a decision point the person owns, not a status update to skim past.
+
+**Continuous mode (opt-in).** Once the proposal is approved, the person may waive the gates for named phases ("run phases 2–4 without stopping"). The builder then goes straight from one phase to the next, but only when the finished phase's acceptance criteria all have passing tests and its `Verify:` line holds. It still stops for anything that needs the person: a flag-back (§5), a disputed criterion (§3b), a failing test it can't fix in two tries, or scope that has grown. Release-qa still runs at the milestone. This is the same single generalist (§7c), not a team. It trades check-ins for speed, so use it when the plan is solid and the person would rather review the result than each step. The default stays one gate per phase.
 
 Skip explicit phasing only for a change small enough to describe in one sentence — a phase list for a one-file fix is ceremony, not decomposition.
 
@@ -129,9 +132,29 @@ Every spec carries a **Deviations from spec** section, appended to during Build 
 - **app-developer** adds an entry whenever a phase surfaces something the plan didn't see: a chosen library missing a capability, a phase that ballooned or turned out to depend on a later one, a pattern that the implementation kept working around. This is separate from flagging an architecture decision back (that still stops the build) — it's the smaller stuff that gets absorbed and would otherwise vanish.
 - **release-qa** adds an entry for any spec-conformance gap it finds, and for any place where what shipped diverged from what was specified — including divergences the developer didn't record.
 
+**Disputed criteria are recorded here too, and ruled on by the person, never by the builder or reviewer.** When the developer or release-qa finds an acceptance criterion that is wrong, contradictory or uncheckable, they don't reinterpret it in code or pass/fail it on their own reading. They stop, put the problem and a proposed wording to the person, and log the outcome:
+
+```markdown
+- [phase N / verify] RULING on "<criterion>" — raised by <developer|release-qa>: <problem>
+  — ruled by <person>: <decision> — <reason>
+```
+
+A ruling that "looks mechanical" is still the person's call. In a run the person has explicitly left unattended, the builder may proceed on a ruling marked `PROVISIONAL` and list every provisional ruling in its hand-off for confirmation.
+
 Leave the section with a single "None" bullet if nothing diverged. That's a real result, not an empty formality.
 
 The `evolve` skill reads this section across projects to decide what in the framework itself needs to change. An entry here isn't a criticism of the build — it's the raw material for the next version of the process.
+
+---
+
+## 3c. Bug fixes and behaviour changes: specify the class, not the example
+
+A bug report describes one instance. Writing criteria for only that instance is how a fix ships a regression next to it. (In a trial on a real open-source issue, a "scientific notation" fix was written and tested for huge numbers only. JavaScript also uses scientific notation below 1e-6, and the new code crashed there.) For any fix or behaviour change, even one too small for a full consultation:
+
+- **Name the class of the problem**, not the example ("numbers the runtime prints in scientific notation", not "Number.MAX_VALUE"). Check the language's actual behaviour to find where the class's edges are, rather than assuming.
+- **Write a criterion for each edge, in both directions** wherever they apply: huge and tiny, positive and negative, empty and very long.
+- **Add one criterion that inputs the code handled correctly before still produce the same output.** Any change in previously-correct behaviour that no criterion asks for is a regression.
+- **Check every rule against an ordinary input before building it.** For each rule turned into a criterion, try one everyday input where the rule gives a strange-looking result ("round to 3 significant digits" applied to 1001 bytes gives "1000 B"). Raise those as clarify questions. A spec is built faithfully, so it's the ceiling: the strange result ships unless someone asks.
 
 ---
 
@@ -170,6 +193,12 @@ The default failure mode is Claude jumping straight to code and solving the wron
 3. **Implement** — approve the plan, let Claude code against it, verifying as it goes
 4. **Commit** — descriptive message, PR opened
 
+**The builder's own tests are the gate for each commit.** Every acceptance criterion gets a test that checks it as written (named or commented with the criterion it covers, so a reviewer can map them), and the full suite passes before the commit. Where a test is genuinely impractical, say how to check the criterion by hand instead. Release-qa still checks independently later. These tests are what make it safe for release-qa to look once per milestone instead of after every phase. If an existing test fails and looks unrelated, prove it against the last commit in a scratch `git worktree` rather than declaring it "known".
+
+**List user-visible changes beyond the phase itself** in the phase report: changed output text, error messages, limits, defaults, tool descriptions. Side effects like these (a public error message changed while raising an internal limit) get past criteria and are what users actually notice.
+
+**Commit only what belongs in the repo.** `scripts/safe_commit.py` (in this plugin) stages everything, but first adds OS and tool clutter it finds (`.DS_Store`, `__pycache__/`, `*.pyc`, `Thumbs.db`) to `.gitignore` and untracks any already committed. It refuses to commit files that look like secrets (`.env`, `*.pem`, keys) and checks the tree is clean afterwards, so a commit hook or formatter that changed files doesn't slip by. When working on someone else's repo, keep `specs/` and `docs/` out of commits with `.git/info/exclude`, so a pull request contains only the change.
+
 Skip planning for genuinely small changes (a typo, a log line) — it's overhead you don't need when you could describe the diff in one sentence. Use it whenever the change touches multiple files or you're unsure of the approach.
 
 **Clarify before each phase, not just once at the start.** Before beginning a phase's own Explore→Plan→Implement→Commit loop — including phase 1 — run a short clarify pass: up to ~5 targeted questions resolving ambiguity specific to *that phase's* scope (not the whole project again), fold the answers into that phase's section of the spec, then proceed. This is Spec Kit's `/clarify` gate applied recurringly: ambiguity that isn't visible until a phase is actually in front of you doesn't get papered over by a plan made phases earlier. Skip it only when a phase is genuinely unambiguous — say so rather than skipping silently.
@@ -201,7 +230,15 @@ This is the stage that actually determines whether your app hallucinates in prod
    - Hallucination detection — are there claims with no support in context?
    - Decision validity — is the output label/action actually a valid option?
    - Rationale sufficiency — does the stated reasoning actually justify the decision?
-5. **Adversarial review subagent** — after implementation, a *fresh-context* subagent reviews the diff against the spec, not the code it just wrote. It has no attachment to its own reasoning, so it catches gaps a self-review misses. Tell it to flag only correctness gaps, not style preferences — otherwise you get over-engineering chasing every nit.
+5. **Adversarial review subagent** — after implementation, a *fresh-context* subagent reviews the diff against the spec, not the code it just wrote. It has no attachment to its own reasoning, so it catches gaps a self-review misses. This plugin ships one: `agents/reviewer.md`. What makes it useful rather than slow, learned from 34 review rounds across 11 real runs:
+   - **Once per milestone, over the whole batch** — not after every phase. Per-phase review cost more than the building did, and reviewers wrote five times as much as builders.
+   - **Run the test suite once**, then map each criterion to its test. A test that really checks what the criterion says (right input, right assertion, not mocked away) and passes is the evidence; don't redo it by hand. Hand-check only criteria with no sound test.
+   - **What a user sees first** — the spec's main examples, typical inputs, how output reads — before exotic numeric limits.
+   - **One or two adversarial inputs per feature**, including the mirror of any reported bug (if the bug was about huge values, try tiny ones).
+   - **A regression sweep against the old code**: for touched code paths, run inputs the old code handled against both `git worktree add <scratch> <base>` and the new code. Anything that worked before and now differs, without a criterion asking for it, is a fail.
+   - **FAIL only for a written criterion not met, or a regression.** Everything else goes under Notes, which never trigger a rebuild. Without this rule, review drifted into chasing edge cases nobody specified (seven failed rounds on bigint precision for a library whose README never mentions it, code 3.8× upstream's size) while missing the "1000 kB" a user would see.
+   - **A hard cap of three fix rounds per feature**, unattended or not, then the person decides. Cost tracked review strictness, not project size.
+   - **It never edits code and never rewrites a criterion.** A criterion it thinks is wrong goes to the person (§3b).
 6. **Human-in-the-loop checkpoints** for anything high-stakes — plan-mode approval, a confirmation step before an agent takes an irreversible action. Don't let autonomy creep past what the task's risk actually justifies.
 
 If you can't verify a change, don't ship it — that's the rule, not a suggestion.
@@ -325,7 +362,11 @@ The point: a PR can't merge if the eval score regresses, not just if unit tests 
 - [ ] High-stakes or domain-expertise decisions use a named elicitation technique (§7b), not just a generic "thoughts?" prompt
 - [ ] Structured outputs wherever a decision feeds downstream logic
 - [ ] Golden dataset + eval suite runs in CI, not just locally
-- [ ] Adversarial review subagent checks the diff against the spec before calling it done
+- [ ] Every phase has checkable acceptance criteria and a literal `Verify: run X → see Y` line
+- [ ] Bug fixes specify the class and both edges, plus "previously-correct inputs unchanged" (§3c)
+- [ ] Every acceptance criterion has a test; the suite passes before each commit
+- [ ] Disputed criteria are ruled on by the person and logged in Deviations, never decided by the builder or reviewer
+- [ ] Adversarial review subagent checks the diff against the spec once per milestone, fails only on unmet criteria or regressions, and stops after three fix rounds
 - [ ] Deviations from spec (§3b) recorded during Build and Verify, not reconstructed later
 - [ ] Deployment target chosen at spec time, matched to app shape
 - [ ] Tracing wired up before first real user, not after the first incident

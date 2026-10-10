@@ -21,20 +21,30 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/framework.md` before your first session o
 
 3. **Work the spec's named phases as hard gates.** If the spec has an explicit Phased build plan (framework.md §3a), those phases *are* your top-level increments — don't invent your own breakdown on top of them. Only fall back to identifying your own smallest independently-verifiable slices (one endpoint, one component, one agent node) if the spec doesn't already name phases. Either way, don't build the whole thing in one pass.
 
-4. **Before starting each phase — including phase 1 — run a short clarify pass** (framework.md §5): up to ~5 targeted questions about ambiguity specific to *that phase's* scope, not the whole project again. Fold the answers into that phase's section of the spec before writing any code for it. Skip this only when the phase is genuinely unambiguous, and say so out loud rather than skipping silently.
+4. **Before starting each phase — including phase 1 — run a short clarify pass** (framework.md §5): up to ~5 targeted questions about ambiguity specific to *that phase's* scope, not the whole project again. Fold the answers into that phase's section of the spec before writing any code for it. Two checks belong in every clarify pass:
+   - **Does each acceptance criterion hold up on an ordinary input?** For each rule, try one everyday input where it gives a strange-looking result (framework.md §3c), and ask about it rather than building it faithfully.
+   - **For a bug fix or behaviour change**, name the class of the problem and its edges in both directions, and make sure there's a criterion that previously-correct inputs still give the same output (§3c). This applies even when the fix is too small for app-architect.
+
+   If the phase has no checkable acceptance criteria or `Verify:` line yet, write them now (framework.md §3a) and show them as part of the clarify pass. Skip the clarify pass only when the phase is genuinely unambiguous, and say so out loud rather than skipping silently.
 
 5. **Per phase, run the explore → plan → implement → commit loop** (framework.md §5):
    - Explore relevant existing code first; delegate to subagents for anything that would otherwise burn your main context
    - Use plan mode for anything nontrivial; skip the ceremony for genuinely small steps
    - Implement against the spec's stated interfaces, not a reinterpretation of them — promoting validated logic out of the MVP notebook where it exists, rather than rewriting from scratch
-   - Write tests for what you just built — fast, local, "did I build it correctly" checks. This is not the full Verify stage; that's release-qa's job. Yours is a sanity check before moving to the next phase, not the final gate
-   - Commit with a message that references the spec and the phase
+   - Write tests for what you just built: every acceptance criterion gets a test that checks it as written, named or commented with the criterion it covers so release-qa can map them. Run them and the full suite; the phase isn't done until they pass. If an existing test fails and looks unrelated, prove it against the last commit in a scratch `git worktree` rather than calling it "known". This is not the Verify stage (that's release-qa's), but it is the gate for your commit, because release-qa only looks once per milestone
+   - Commit with a message that references the spec and the phase, through `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/safe_commit.py -m "<message>"`. It keeps OS/tool clutter out, refuses secret-looking files, and warns if a hook or formatter left the tree dirty
 
-6. **Stop at the phase boundary — a hard gate, not a status update.** After a phase is implemented and its own checkpoint verified, report what's built, what's left, and anything that surprised you against the plan — then stop. Do not start the next phase's clarify pass or implementation until the person explicitly says to continue. This is stronger than an ordinary progress check-in: if the spec named phases, silently proceeding into the next one is exactly the failure mode phase gates exist to prevent.
+6. **Stop at the phase boundary — a hard gate, not a status update.** After a phase is implemented and its own checkpoint verified, report what's built, what's left, anything that surprised you against the plan, and **any user-visible change beyond the phase itself** (changed output text, error messages, limits, defaults) — then stop. Do not start the next phase's clarify pass or implementation until the person explicitly says to continue. This is stronger than an ordinary progress check-in: if the spec named phases, silently proceeding into the next one is exactly the failure mode phase gates exist to prevent.
 
    Whatever surprised you against the plan, also write down — a one-line entry in the spec's **Deviations from spec** section (framework.md §3b): a library that was missing something, a phase that ballooned or turned out to depend on a later one, a pattern the implementation kept working around. This is the smaller stuff that gets absorbed during a build and would otherwise vanish; the `evolve` skill uses it later to improve the framework. It's distinct from flagging an architecture decision back (below), which still stops the build.
 
+   **Continuous mode.** If the person has waived the gates for named phases (framework.md §3a), go straight on to the next phase's clarify pass once the current phase's criteria all pass and its `Verify:` line holds. Still stop for a flag-back, a disputed criterion, a failing test you can't fix in two tries, or scope that has grown. Keep the per-phase report anyway, collected for the person to read at the end.
+
 7. **Hand off to release-qa** once a milestone or the whole spec is implemented and passing your own tests. Don't self-certify anything as shippable — that determination belongs to release-qa, deliberately not you, so it's an independent check.
+
+## When a criterion itself looks wrong
+
+If an acceptance criterion is contradictory, impossible to check, or would force a clearly bad result, don't reinterpret it in code and don't quietly build what you think was meant. Build everything else, then stop and put the problem and your proposed wording to the person. Record their ruling in the spec's Deviations section (framework.md §3b). However mechanical it looks, it's their call, not yours.
 
 ## When to flag back instead of proceeding
 

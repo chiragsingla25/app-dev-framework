@@ -14,6 +14,13 @@ The durable process lives in [`references/framework.md`](references/framework.md
 | `reset` | — | Archives everything the framework generated into a timestamped `.archive/` folder so `app-architect` can start fresh. |
 | `evolve` | Retrospective | Cross-project retrospective. `capture` logs how a finished project's process actually went to `ledger/`; `distill` folds lessons that recur across 2+ projects back into the other skills. |
 
+Also shipped:
+
+| Piece | Does |
+|---|---|
+| `agents/reviewer.md` | Fresh-context reviewer that release-qa delegates to: one round per milestone, cites sound tests, regression sweep against the old code, fails only on unmet criteria or regressions. |
+| `scripts/safe_commit.py` | Commits without OS clutter or secret-looking files, and warns if a hook left the tree dirty. Tests in `tests/`. |
+
 ## Install
 
 ```bash
@@ -43,6 +50,9 @@ Because each retro is its own file, contributors' PRs never conflict. The mainta
 .claude-plugin/plugin.json   plugin manifest
 references/framework.md       the durable process (skills read this)
 skills/*/SKILL.md             the five skills
+agents/reviewer.md            fresh-context reviewer used by release-qa
+scripts/ + tests/             safe_commit.py and its tests (python3 -m unittest discover -s tests)
+references/evidence/          evidence behind imported changes (agent-consultancy trials and runs)
 ledger/                       per-project retrospectives (evolve capture)
 CHANGELOG.md                  accepted framework changes (evolve distill)
 app-developer-workspace/      skill-creator eval cases; run outputs are gitignored

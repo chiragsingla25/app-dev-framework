@@ -52,7 +52,7 @@ approve docs/proposal.md" gate. Other four skills untouched.
 - 2.3 Parallel subagent chunks only where 1.4 flagged them: shared contract/types file
   written first, then reconcile + review pass.
 
-## Workstream 3 — Verification · LATER (small, high-trust payoff)
+## Workstream 3 — Verification · PARTLY DONE 2026-10-10 (3.1 done; 3.3 done differently, via agents/reviewer.md; 3.2 open)
 
 - 3.1 `framework.md` §3a: every phase checkpoint is a literal `Verify: run X → you should see Y`.
   `app-developer` runs it before declaring the phase done.

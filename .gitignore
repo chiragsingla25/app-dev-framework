@@ -6,3 +6,5 @@
 # The eval definitions (evals/evals.json) and summaries (benchmark.*) stay tracked.
 *-workspace/iteration-*/
 *-workspace/*-snapshot/
+__pycache__/
+*.pyc
